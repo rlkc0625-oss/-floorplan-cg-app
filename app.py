@@ -121,10 +121,17 @@ if st.button("✨ CGを作成", type="primary", use_container_width=True):
 """
     with st.spinner("CGを生成しています…少し時間がかかります。"):
         try:
-            img_bytes = uploaded.getvalue()
+            # Streamlit/iPhone uploads can arrive as application/octet-stream.
+            # Re-encode the uploaded image to PNG and explicitly send a valid
+            # filename + MIME type so the OpenAI Images API accepts it.
+            source = Image.open(io.BytesIO(uploaded.getvalue())).convert("RGB")
+            normalized = io.BytesIO()
+            source.save(normalized, format="PNG")
+            normalized.seek(0)
+
             result = client.images.edit(
                 model="gpt-image-2",
-                image=io.BytesIO(img_bytes),
+                image=("floorplan.png", normalized, "image/png"),
                 prompt=prompt,
                 size="1536x1024",
                 quality="medium",
